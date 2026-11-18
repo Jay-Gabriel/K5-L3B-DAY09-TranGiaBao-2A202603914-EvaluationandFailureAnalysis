@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
+from numbers import Integral
 
 import numpy as np
 from scipy import stats as sp_stats
@@ -79,13 +80,26 @@ def paired_bootstrap(a: Sequence[float], b: Sequence[float], *, n_resamples: int
     return (diff_mean, float(res.confidence_interval.low), float(res.confidence_interval.high))
 
 
+def _validate_pass_counts(n: int, c: int, k: int) -> tuple[int, int, int]:
+    """Validate binomial-estimator counts and normalize integer-like values."""
+    values = (n, c, k)
+    if any(isinstance(value, bool) or not isinstance(value, Integral) for value in values):
+        raise ValueError("n, c, and k must be integers")
+    n, c, k = (int(value) for value in values)
+    if n <= 0:
+        raise ValueError("n must be positive")
+    if not 0 <= c <= n:
+        raise ValueError("c must be between 0 and n")
+    if not 1 <= k <= n:
+        raise ValueError("k must be between 1 and n")
+    return n, c, k
+
+
 def pass_at_k(n: int, c: int, k: int) -> float:
     """Probability that AT LEAST ONE of k trials drawn from n (c of them passing) passes.
-    Unbiased estimator (Chen et al. 2021): 1 - C(n-c, k) / C(n, k). Raise ValueError if k > n."""
-    if k > n:
-        raise ValueError(f"k ({k}) cannot be greater than n ({n})")
-    if k <= 0 or n <= 0:
-        raise ValueError("n and k must be positive")
+    Unbiased estimator (Chen et al. 2021): 1 - C(n-c, k) / C(n, k).
+    Raise ValueError unless n > 0, 0 <= c <= n, and 1 <= k <= n."""
+    n, c, k = _validate_pass_counts(n, c, k)
     if n - c < k:
         return 1.0
     return 1.0 - math.comb(n - c, k) / math.comb(n, k)
@@ -93,12 +107,10 @@ def pass_at_k(n: int, c: int, k: int) -> float:
 
 def pass_hat_k(n: int, c: int, k: int) -> float:
     """pass^k (tau-bench, Yao et al. 2024): probability that ALL k trials drawn from n pass.
-    Unbiased estimator: C(c, k) / C(n, k). Raise ValueError if k > n.
+    Unbiased estimator: C(c, k) / C(n, k). Raise ValueError unless
+    n > 0, 0 <= c <= n, and 1 <= k <= n.
     pass^k <= pass@1 <= pass@k; a reliable agent keeps pass^k close to pass@1."""
-    if k > n:
-        raise ValueError(f"k ({k}) cannot be greater than n ({n})")
-    if k <= 0 or n <= 0:
-        raise ValueError("n and k must be positive")
+    n, c, k = _validate_pass_counts(n, c, k)
     if c < k:
         return 0.0
     return math.comb(c, k) / math.comb(n, k)

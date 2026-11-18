@@ -20,7 +20,7 @@ Lệnh in ra ba phần: các event trong trace (`reply`, `decision`, `model_over
 | Vì sao là bước *đầu tiên* | Bước 1 (handoff) tạo hợp đồng ủy quyền đúng; Bước 2 (investigator: lookup_order) đọc chính xác dữ liệu đơn O-202 từ DB có `delay_days=2`. Bước 3 tự ý lấy số ngày 5 do khách khai trên ticket ghi đè lên dữ liệu DB. |
 | Failure mode | `FM-03` (ticket_trust — tin ticket hơn DB) |
 | Đối chứng | Trên shape `fixed C-002@11`: hoàn toàn không có event `model_override`. Bước 3 chuyển thẳng sang `quote` với `amount_vnd=0`, từ chối bồi thường chính xác và grader PASS. |
-| Regression test | `tests/test_public_matrix.py::test_public_single_run_cases` hoặc `lab9.graders.RefundAmountCorrect`: fail trên `seeded_regression` (exit 1) và pass trên `fixed` (exit 0). |
+| Regression test | `tests/test_lab9_trace_case.py::test_trace_case_ticket_does_not_replace_db` kiểm tra `seeded_regression` thất bại và có override, trong khi `fixed` đạt và không có override. |
 | Chưa chắc chắn | Trace chỉ ghi nhận payload ghi đè, không lưu chuỗi suy luận phân tích nội tâm (chain-of-thought) của mô hình trước khi gọi tool ghi đè. |
 
 ## Quy tắc
